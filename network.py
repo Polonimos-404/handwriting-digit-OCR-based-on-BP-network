@@ -2,17 +2,19 @@ import numpy as np
 import os
 import pickle as pkl
 from typing import List
-import matplotlib.pyplot as plt
 import pandas as pd
+import matplotlib.pyplot as plt
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import log_loss, accuracy_score, precision_score, f1_score, recall_score
+from time import perf_counter
 
 np.random.seed(0)
+global_model_folder = 'models/'
 
 
 # 单层神经元
 class network_layer:
-    def __init__(self, input_size: int = None, output_size: int = None, _activation: str = None, _weights=None, _bias=None):
+    def __init__(self, input_size: int = None, output_size: int = None, _weights=None, _bias=None, _activation: str = None):
         """
 
         :param int input_size: 输入神经元数
@@ -77,13 +79,13 @@ class BP_network:
         :param model_path: 模型文件对应路径
         """
         self.layers = []
-        self.model_path = model_path  # 每个模型独有的存储路径
+        self.model_path = global_model_folder + model_path  # 每个模型独有的存储路径
         if load_from_trained:
             self.load_model()
         elif layers is not None:
-            self.layers = [network_layer(in_sz, out_sz, act) for (in_sz, out_sz, act) in layers]  # 层对象列表
+            self.layers = [network_layer(in_sz, out_sz, _activation=act) for (in_sz, out_sz, act) in layers]  # 层对象列表
 
-        self.layers_count = len(layers)
+        self.layers_count = len(self.layers)
         print(f'Model created, {self.layers_count} layers in total.')
 
     # 改为读/写参数
@@ -92,7 +94,9 @@ class BP_network:
         print('Loading model...')
         if os.path.exists(self.model_path):
             with open(self.model_path, 'rb') as f:
-                self.layers = pkl.load(f)
+                layer_parameters = pkl.load(f)
+                self.layers = [network_layer(_weights=w, _bias=b, _activation=act) for (w, b, act) in layer_parameters]
+
             print(f'Model loaded from "{self.model_path}".')
         else:
             print('Path does not exist.')
@@ -101,7 +105,8 @@ class BP_network:
     def save_model(self):
         print('Saving model...')
         with open(self.model_path, 'wb') as f:
-            pkl.dump(self.layers, f)
+            layer_parameters = [(layer.weights, layer.bias, layer.activation) for layer in self.layers]
+            pkl.dump(layer_parameters, f)
         print(f'Model saved as "{self.model_path}".')
 
     # 添加层
@@ -118,7 +123,7 @@ class BP_network:
             print('Empty network. Please append layers first.')
         else:
 
-            print(f'Total layers count: {self.layers_count}\n')
+            print(f'Total layers count: {self.layers_count}')
             layer_info = [[layer.weights.shape[0], layer.bias.shape[0], layer.activation] for layer in self.layers]
             mtx = pd.DataFrame(layer_info, index=[f'Layer{i}' for i in range(1, self.layers_count + 1)],
                                columns=['Input Channels', 'Output Channels', 'Activation'])
@@ -161,15 +166,17 @@ class BP_network:
 
     # 训练函数
     def train_and_evaluate(self, x_train, y_train_one_hot, y_train=None, x_test0=None, y_test0=None,
-                           epochs=100, learning_rate=1e-3, batch_size=60, trace=True, draw=True):
+                           epochs=30, learning_rate=0.05, batch_size=60, trace=True, draw=True):
         # (x_test0, y_test0)可以是测试集中的一小部分或验证集
         # 参数batch_size == 1时相当于随机梯度下降(SGD)，> 1时相当于小批量梯度下降(MBGD)，== len(x_train)时相当于批量梯度下降(BGD)
         if self.layers_count < 3:
             print('Layers insufficient, the network should contain AT LEAST 3 LAYERS.\nPlease append layers first.')
         else:
+            print('Training begins.')
+            start_t = perf_counter()
             # 打印当前网络信息
-            print('Current network info:')
-            self.show_info()
+            # print('Current network info:')
+            # self.show_info()
 
             losses, acc_trn, acc_tst = [], [], []
             for i in range(epochs):
@@ -187,22 +194,25 @@ class BP_network:
                     accuracy_train = accuracy_score(y_train, self.predict(x_train))
                     accuracy_test = accuracy_score(y_test0, self.predict(x_test0))
                     print(
-                        "Epoch: {:d}\nCEL on train set: {:.4f}\nAccuracy on train set: {:.2f}%\nAccuracy on test set: {:.2f}%"
-                        .format(i, cross_entropy_loss, accuracy_train * 100, accuracy_test * 100))
+                        "\nEpoch: {:d}\nCEL on train set: {:.4f}\nAccuracy on train set: {:.2f}%\nAccuracy on test set: {:.2f}%"
+                        .format(i + 1, cross_entropy_loss, accuracy_train * 100, accuracy_test * 100))
                     losses.append(cross_entropy_loss)
                     acc_trn.append(accuracy_train)
                     acc_tst.append(accuracy_test)
 
+            end_t = perf_counter()
+            print('Training Completed.')
+            print('Time elapsed: ', end_t - start_t)
+
             # 绘制loss和accuracy关于epoch的变化图线
             if draw:
                 epoch = [i for i in range(epochs)]
-                print('Training Completed.')
                 plt.subplot(2, 1, 1)
                 plt.plot(epoch, losses, label='loss', marker='o')
                 plt.xlabel('Epoch')
                 plt.ylabel('Loss')
                 plt.title(f'Cross Entropy Loss    lr={learning_rate}')
-                plt.plot(2, 1, 2)
+                plt.subplot(2, 1, 2)
                 plt.plot(epoch, acc_trn, label='train_acc', marker='*')
                 plt.plot(epoch, acc_tst, label='test_acc', marker='>')
                 plt.xlabel('Epoch')
@@ -212,7 +222,7 @@ class BP_network:
                 plt.show()
 
     # 给出一定特征集上的预测
-    def predict(self, x_predict: np.ndarray):
+    def predict(self, x_predict: np.ndarray or List):
         return np.array([np.argmax(self.feed_forward(x)) for x in x_predict])
 
     # 测试函数
