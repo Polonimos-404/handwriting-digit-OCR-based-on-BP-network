@@ -7,18 +7,6 @@ import pickle
 from statistics import mean, stdev
 
 """
-4.11
-    必须要做的:
-    1. 把单个数字的图片转换为28 * 28的灰度图像，缓存 ok
-    2. 图形化操作界面：
-        至少包含File，Settings，About三个部分
-    可能能做的：
-    1. 把含有多个数字的图像分开，逐个识别 ok
-    2. 允许用户在自定义的数据集上对模型进行微调/训练新的模型（允许自定义各个参数，提供进度显示）
-        从而允许用户使用自由选择模型进行预测
-"""
-
-"""
 4.18
     1.已经具备将实际图片二值化，并分割成含有单个数字的部分，调整至28 * 28大小和以不同形式缓存的能力
     2.在实际数据的测试中，使用归一化数据训练的模型比使用原数据训练的模型，以及0-1二值化训练的模型识别正确率高
@@ -122,7 +110,7 @@ class img_administration:
                  digits_array: list格式，每个元素为一个数字的ndarray数组
         """
         img = cv2.imread(img_path)
-        # 转换为灰度图，并二值化
+        # 转换为灰度图，并二值化（findContours只能处理二值图）
         img_gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
         _, img_bin = cv2.threshold(img_gray, 127, 255, cv2.THRESH_BINARY_INV)
 
