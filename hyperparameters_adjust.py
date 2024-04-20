@@ -1,5 +1,4 @@
-from typing import List
-from network import BP_network, network_layer
+from models.network import List, BP_network
 from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import accuracy_score
 

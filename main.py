@@ -1,7 +1,6 @@
-import data_preprocess
-from network import BP_network
-import data_preprocess as d_p
-import matplotlib.pyplot as plt
+from models.network import BP_network
+from pic_cache import img_preprocess_and_cache as d_p
+import time
 
 
 def main():
@@ -10,23 +9,20 @@ def main():
 
 def test():
     """
-    # print(x_train[0], x_test[0])
+    print(x_train[0], x_test[0])
     layers = [(784, 256, 'sigmoid'), (256, 100, 'sigmoid'), (100, 10, 'softmax')]
     """
-    model = BP_network(layers=[(784, 256, 'sigmoid'), (256, 100, 'sigmoid'), (100, 10, 'softmax')], model_path='test02.pkl')
-    x_train, y_train, y_train_one_hot, x_test, y_test = data_preprocess.train_treat()
-    model.train_and_evaluate(x_train, y_train_one_hot, y_train, x_test[:2000], y_test[:2000])
-    model.test(x_test, y_test)
-    model.save_model()
-    '''fig, ax = plt.subplots(nrows=5, ncols=5, sharex='all', sharey='all')
-    ax = ax.flatten()
-    for i in range(10):
-        ax[i].imshow(x[i].reshape(28, 28), cmap='Greys', interpolation='nearest')
-    ax[0].set_xticks([])
-    ax[0].set_yticks([])
-    plt.tight_layout()
-    plt.show()'''
-
+    model = BP_network(load_from_trained=True, model_path='default_mdl.pkl')
+    # x_train, y_train, y_train_one_hot, x_test, y_test = d_p.train_treat()
+    # model.train_and_evaluate(x_train, y_train_one_hot, y_train, epochs=20, learning_rate=0.01, batch_size=30)
+    # model.test(x_test, y_test)
+    pics = ['20240417212258', '20240417232801', '20240418000115']
+    servive = d_p.img_administration('default.pkl')
+    for pic in pics:
+        _, digits = servive.fetch('test_imgs/' + pic + '.jpg')
+        print(model.predict(digits))
+        time.sleep(2)
+    '''print(x_train[0], x_test[0])'''
 
 
 if __name__ == "__main__":
