@@ -22,7 +22,7 @@ class network_layer:
     def __init__(self, input_size: int = None, output_size: int = None, _weights=None, _bias=None,
                  _activation: str = None):
         """
-
+        若_weights和_bias不为None则是使用缓存的参数创建
         :param int input_size: 输入神经元数
         :param int output_size: 输出神经元数
         :param str _activation: 激活函数类型
@@ -160,7 +160,7 @@ class BP_network:
             # 反向逐层计算梯度
             # 输出层
             output_layer = self.layers[-1]
-            output_layer.delta = y - output  # 输出层激活函数为softmax，损失函数为多分类交叉熵损失函数，故此处直接获得负梯度值
+            output_layer.delta = y - output  # 多分类任务限定了输出层激活函数为softmax，损失函数为多分类交叉熵损失函数，故此处直接获得负梯度值
             nabla_w[-1] += output_layer.delta * np.atleast_2d(self.layers[-2].activation_output).T
             nabla_b[-1] += output_layer.delta
             next_layer = output_layer

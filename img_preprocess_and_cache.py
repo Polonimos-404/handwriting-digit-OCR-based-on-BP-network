@@ -27,7 +27,7 @@ class img_administration:
                 ...
                 history_name1/
                     cur_time1/
-                        img_marked
+                        img_marked.jpg
                         img_npzs/
                             1.npz
                             ...
@@ -68,7 +68,7 @@ class img_administration:
                 digit_arrays.append(array)
         else:
             img_marked, digit_arrays = self.image_read_and_treat(img_path)
-        # 展示处理后的数字灰度图和标记出数字轮廓的原图
+        # 展示处理后的神经网络输入对应的灰度图，和标记出数字轮廓的原图
         show(digit_arrays)
         cv2.namedWindow('img', cv2.WINDOW_FREERATIO)
         cv2.imshow('img', img_marked)
@@ -119,15 +119,15 @@ class img_administration:
         # 如果输入选择cv2.RETR_TREE，则以树形结构组织输出，
         # hierarchy的四列分别对应下一个轮廓编号、上一个轮廓编号、父轮廓编号、子轮廓编号，该值为负数表示没有对应项。
 
-        # 用标准差法剔除大小明显离群的轮廓，即非数字的轮廓。sigma默认值为3
-        def thr_sigma(dataset, n=2.5):
+        # 用标准差法剔除大小明显离群的轮廓，即非数字的轮廓。
+        def n_sigma(dataset, n=2.5):
             d_mean = mean(dataset)  # 得到均值
             sigma = stdev(dataset, d_mean)  # 得到标准差
             remove_idx = [idx for idx, size in enumerate(dataset) if abs(size - d_mean) > n * sigma]
             return remove_idx
 
         sizes = [sub.shape[0] for sub in contours]
-        illegal = thr_sigma(sizes)
+        illegal = n_sigma(sizes)
         if illegal:
             for i in illegal:
                 del contours[i]
