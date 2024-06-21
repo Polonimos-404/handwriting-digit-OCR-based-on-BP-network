@@ -1,6 +1,7 @@
-from models.network import List, BP_network
-from sklearn.model_selection import StratifiedKFold
 from sklearn.metrics import accuracy_score
+from sklearn.model_selection import StratifiedKFold
+
+from network import List, BP_network, MODELS_FOLDER
 
 
 # K折交叉验证，用于选择最优超参数
@@ -19,17 +20,20 @@ def k_fold_cross_validation(x, y, y_one_hot,
     :param learning_rate:
     :param batch_size:
     """
-    folder = 'models'
+
     models = []
+    # 从自定义的超参数列表中创建模型
     if hyperparameters is not None:
         for i, net in enumerate(hyperparameters):
-            models.append(BP_network(net, model_path=folder + f'/authorized {i}.pkl'))
+            models.append(BP_network(net, model_path=MODELS_FOLDER + f'authorized {i}.pkl'))
+    # 获取已有的模型
     if paths is not None:
         for path in paths:
-            models.append(BP_network(load_from_trained=True, model_path=folder + path + '.pkl'))
+            models.append(BP_network(load_from_trained=True, model_path=MODELS_FOLDER + path + '.pkl'))
 
     avg_scores = []
-    for i, model in enumerate(models):
+    for model in models:
+        # 利用sklearn中的StratifiedKFold将数据集分为k折
         skf = StratifiedKFold(n_splits=k, shuffle=True)
         scores = []
         for train_idx, valid_idx in skf.split(x, y):
@@ -42,6 +46,7 @@ def k_fold_cross_validation(x, y, y_one_hot,
         avg_score = sum(scores) / k
         avg_scores.append(avg_score)
 
+    # 选择平均准确率最高的模型
     mx_sc = 0.0
     mx_sc_idx = -1
     print('Average accuracy scores of each model:')
@@ -51,5 +56,6 @@ def k_fold_cross_validation(x, y, y_one_hot,
             mx_sc = score
             mx_sc_idx = i
     print(f'\nModel with highest accuracy score: {models[mx_sc_idx].model_path}, {mx_sc * 100}%')
+    # 如果最佳模型来源于自定义超参数列表，则将其保存
     if hyperparameters is not None and mx_sc_idx < len(hyperparameters):
         models[mx_sc_idx].save_model()
